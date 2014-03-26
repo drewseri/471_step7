@@ -59,6 +59,10 @@ private:
 	CGrImage m_initial;
 	void DrawImage();
 	void DrawLine(CGrImage &image, int x1, int y1, int x2, int y2);
+	CGrImage    m_bird;
+	int m_drawBird;
+	int m_birdx;
+	int m_birdy;
 
     afx_msg void OnMoviesOpensourcemovie();
     afx_msg void OnMoviesOpenoutputmovie();
@@ -90,6 +94,7 @@ public:
 	virtual BOOL OnSaveDocument(LPCTSTR lpszPathName);
 	virtual BOOL OnOpenDocument(LPCTSTR lpszPathName);
 	afx_msg void OnEditClearframe();
+	afx_msg void OnEditDrawbird();
 };
 
 

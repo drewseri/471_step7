@@ -39,6 +39,7 @@ BEGIN_MESSAGE_MAP(CRotoScopeDoc, CDocument)
     ON_COMMAND(ID_MOVIES_CLOSEBACKGROUNDAUDIO, &CRotoScopeDoc::OnMoviesClosebackgroundaudio)
     ON_UPDATE_COMMAND_UI(ID_MOVIES_CLOSEBACKGROUNDAUDIO, &CRotoScopeDoc::OnUpdateMoviesClosebackgroundaudio)
 	ON_COMMAND(ID_EDIT_CLEARFRAME, &CRotoScopeDoc::OnEditClearframe)
+	ON_COMMAND(ID_EDIT_DRAWBIRD, &CRotoScopeDoc::OnEditDrawbird)
 END_MESSAGE_MAP()
 
 
@@ -51,7 +52,10 @@ CRotoScopeDoc::CRotoScopeDoc()
 	m_image.SetSize(640, 480);
     m_image.Fill(0, 0, 0);
 	m_movieframe = 0;
-    
+
+    m_bird.LoadFile(L"bird.png");
+	m_drawBird = 0;
+	m_birdx = m_birdy = 0;
 }
 
 //! Destructor
@@ -167,8 +171,6 @@ void CRotoScopeDoc::OnMoviesOpenoutputmovie()
 
     if(!m_moviemake.Open(dlg.GetPathName()))
         return;
-
-	m_movieframe++;
 
     // Make CImage match the size of the output movie.
     m_image.SetSize(m_moviemake.GetWidth(), m_moviemake.GetHeight());
@@ -308,6 +310,7 @@ void CRotoScopeDoc::CreateOneFrame()
 
 void CRotoScopeDoc::OnFramesWriteoneframe()
 {
+	m_movieframe++;
     m_moviemake.WriteImage(m_image);
     m_moviemake.WriteAudio(m_audio);
 }
@@ -392,13 +395,21 @@ void CRotoScopeDoc::Mouse(int p_x, int p_y)
     int x = p_x;                            // No problem there.
     int y = m_image.GetHeight() - p_y - 1;     // Just invert it.
 
-    // Ensure there is an entry for every frame up till this one...
-    std::list<CPoint> empty;
-    while((int)m_draw.size() < m_movieframe + 1)
-        m_draw.push_back(empty);
+	if(m_drawBird == 0)
+	{
+		// Ensure there is an entry for every frame up till this one...
+		std::list<CPoint> empty;
+		while((int)m_draw.size() < m_movieframe + 1)
+			m_draw.push_back(empty);
 
-    // Add the mouse point to the list for the frame
-    m_draw[m_movieframe].push_back(CPoint(x, y));
+		// Add the mouse point to the list for the frame
+		m_draw[m_movieframe].push_back(CPoint(x, y));
+	}
+	else
+	{
+		m_birdx = p_x;
+		m_birdy = p_y;
+	}
 
     DrawImage();
 }
@@ -675,17 +686,45 @@ void CRotoScopeDoc::DrawImage()
     // Write any saved drawings into the frame
     if(m_movieframe < (int)m_draw.size())
     {
+		int firstTime = 1;
         for(list<CPoint>::iterator i=m_draw[m_movieframe].begin();  
             i!=m_draw[m_movieframe].end();  i++)
         {
-            m_image.Set(i->x, i->y, 255, 0, 0);
+            m_image.Set(i->x, i->y, 0, 255, 0);
+			if(firstTime != 1)
+			{
+				int x1, x2, y1, y2;
+				i--;
+				x1 = i->x;
+				y1 = i->y;
+				i++;
+				x2 = i->x;
+				y2 = i->y;
+				DrawLine(m_image, x1-1, y1-1, x2-1, y2-1);
+				DrawLine(m_image, x1, y1, x2, y2);
+				DrawLine(m_image, x1+1, y1+1, x2+1, y2+1);
+			}
+			firstTime = 0;
         }
     }
 
-	DrawLine(m_image, 10, 10, 100, 20);
-    DrawLine(m_image, 100, 20, 10, 30);
-    DrawLine(m_image, 10, 30, 20, 300);
-    DrawLine(m_image, 20, 300, 30, 30);
+	if(m_birdx != 0 && (m_birdy + m_bird.GetHeight())<m_image.GetHeight())
+	{
+		m_birdx += m_birdx % 4;
+		int location_y = m_image.GetHeight() - m_birdy;
+		for(int r=0;  r<m_bird.GetHeight();  r++)
+		{
+			for(int c=0;  c<m_bird.GetWidth();  c++)
+			{
+				if(m_bird[r][c * 4 + 3] >= 192)
+				{
+					m_image[location_y+r][m_birdx+(c*3)] = m_bird[r][c * 4];
+					m_image[location_y+r][m_birdx+(c*3+1)] = m_bird[r][c * 4+1];
+					m_image[location_y+r][m_birdx+(c*3+2)] = m_bird[r][c * 4+2];
+				}
+			}
+		}
+	}
 
     UpdateAllViews(NULL);
 }
@@ -701,12 +740,12 @@ void CRotoScopeDoc::DrawLine(CGrImage &image, int x1, int y1, int x2, int y2)
             swap(y1, y2);
         }
 		if(x1 == x2)
-            image.Set(x1, y1, 0, 0, 255);
+            image.Set(x1, y1, 0, 255, 0);
         else
         {
             for(int x=x1;  x<=x2;  x++)
             {
-                image.Set(x, y1 + (x - x1) * (y2 - y1) / (x2 - x1), 0, 0, 255);
+                image.Set(x, y1 + (x - x1) * (y2 - y1) / (x2 - x1), 0, 255, 0);
             }
         }
     }
@@ -719,13 +758,25 @@ void CRotoScopeDoc::DrawLine(CGrImage &image, int x1, int y1, int x2, int y2)
             swap(y1, y2);
         }
 		if(y1 == y2)
-            image.Set(x1, y1, 0, 0, 255);
+            image.Set(x1, y1, 0, 255, 0);
         else
         {
             for(int y=y1;  y<=y2;  y++)
             {
-                image.Set( x1 + (y - y1) * (x2 - x1) / (y2 - y1) , y, 0, 0, 255);
+                image.Set( x1 + (y - y1) * (x2 - x1) / (y2 - y1) , y,  0, 255, 0);
             }
         }
     }
+}
+
+void CRotoScopeDoc::OnEditDrawbird()
+{
+	if(m_drawBird == 0)
+	{
+		m_drawBird = 1;
+	}
+	else
+	{
+		m_drawBird = 0;
+	}
 }
