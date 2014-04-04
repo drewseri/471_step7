@@ -139,6 +139,9 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Open background audio...",    ID_MOVIES_OPENBACKGROUNDAUDIO
         MENUITEM "Close background audio",      ID_MOVIES_CLOSEBACKGROUNDAUDIO
+        MENUITEM SEPARATOR
+        MENUITEM "Open second source...",       ID_MOVIES_OPENSECONDSOURCE
+        MENUITEM "Close second source",         ID_MOVIES_CLOSESECONDSOURCE
     END
     POPUP "&Frames"
     BEGIN

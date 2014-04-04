@@ -40,6 +40,8 @@ BEGIN_MESSAGE_MAP(CRotoScopeDoc, CDocument)
     ON_UPDATE_COMMAND_UI(ID_MOVIES_CLOSEBACKGROUNDAUDIO, &CRotoScopeDoc::OnUpdateMoviesClosebackgroundaudio)
 	ON_COMMAND(ID_EDIT_CLEARFRAME, &CRotoScopeDoc::OnEditClearframe)
 	ON_COMMAND(ID_EDIT_DRAWBIRD, &CRotoScopeDoc::OnEditDrawbird)
+	ON_COMMAND(ID_MOVIES_OPENSECONDSOURCE, &CRotoScopeDoc::OnMoviesOpensecondsource)
+	ON_COMMAND(ID_MOVIES_CLOSESECONDSOURCE, &CRotoScopeDoc::OnMoviesClosesecondsource)
 END_MESSAGE_MAP()
 
 
@@ -56,6 +58,8 @@ CRotoScopeDoc::CRotoScopeDoc()
     m_bird.LoadFile(L"bird.png");
 	m_drawBird = 0;
 	m_birdx = m_birdy = 0;
+
+	m_moviemake.SetProfileName(L"profile720p.prx");
 }
 
 //! Destructor
@@ -234,6 +238,10 @@ void CRotoScopeDoc::CreateOneFrame()
         CGrImage image;
         if(m_moviesource.ReadImage(m_initial))
         {
+			if(m_secondsource.HasVideo())
+			{
+				m_secondsource.ReadImage(m_second);
+			}
 			DrawImage();
 		}
     }
@@ -677,9 +685,9 @@ void CRotoScopeDoc::DrawImage()
     {
         for(int c=0;  c<m_image.GetWidth() && c<m_initial.GetWidth();  c++)
         {
-            m_image[r][c*3] = m_initial[r][c*3];
-            m_image[r][c*3+1] = m_initial[r][c*3+1];
-            m_image[r][c*3+2] = m_initial[r][c*3+2];
+				m_image[r][c*3]   = m_initial[r][c*3];
+				m_image[r][c*3+1] = m_initial[r][c*3+1];
+				m_image[r][c*3+2] = m_initial[r][c*3+2];
         }
     }
 
@@ -700,6 +708,7 @@ void CRotoScopeDoc::DrawImage()
 				i++;
 				x2 = i->x;
 				y2 = i->y;
+
 				DrawLine(m_image, x1-1, y1-1, x2-1, y2-1);
 				DrawLine(m_image, x1, y1, x2, y2);
 				DrawLine(m_image, x1+1, y1+1, x2+1, y2+1);
@@ -729,8 +738,65 @@ void CRotoScopeDoc::DrawImage()
     UpdateAllViews(NULL);
 }
 
+int CRotoScopeDoc::Rotate(int x, int y)
+{
+       int dx = (m_image.GetWidth()/2) - x;
+       int dy = (m_image.GetHeight()/2) - y;
+ 
+       float s = sin((m_movieframe/28) * 2 * 3.14);
+       float c = cos((m_movieframe/28) * 2 * 3.14);
+ 
+       // translate point back to origin:
+       x += dx;
+       y += dy;
+ 
+       // rotate point
+       float xnew = x * c - y * s;
+       float ynew = x * s + y * c;
+ 
+       // translate point back:
+       x = xnew - dx;
+       y = ynew - dy;
+ 
+       return (x, y);
+}
+
 void CRotoScopeDoc::DrawLine(CGrImage &image, int x1, int y1, int x2, int y2)
 {
+
+	   int dx = (m_image.GetWidth()/2) - x1;
+       int dy = (m_image.GetHeight()/2) - y1;
+ 
+       float s = sin((m_movieframe/28) * 2 * 3.14);
+       float c = cos((m_movieframe/28) * 2 * 3.14);
+ 
+       // translate point back to origin:
+       x1 += dx;
+       y1 += dy;
+ 
+       // rotate point
+       float xnew = x1 * c - y1 * s;
+       float ynew = x1 * s + y1 * c;
+ 
+       // translate point back:
+       x1 = xnew - dx;
+       y1 = ynew - dy;
+
+	   dx = (m_image.GetWidth()/2) - x2;
+       dy = (m_image.GetHeight()/2) - y2;
+ 
+       // translate point back to origin:
+       x2 += dx;
+       y2 += dy;
+ 
+       // rotate point
+       xnew = x2 * c - y2 * s;
+       ynew = x2 * s + y2 * c;
+ 
+       // translate point back:
+       x2 = xnew - dx;
+       y2 = ynew - dy;
+
 	if(abs(x2 - x1) > abs(y2 - y1))
     {
         // Step in the X direction...
@@ -779,4 +845,23 @@ void CRotoScopeDoc::OnEditDrawbird()
 	{
 		m_drawBird = 0;
 	}
+}
+
+
+void CRotoScopeDoc::OnMoviesOpensecondsource()
+{
+	static TCHAR BASED_CODE szFilter[] = TEXT("Video Files (*.avi;*.wmv;*.asf)|*.avi; *.wmv; *.asf|All Files (*.*)|*.*||");
+
+	CFileDialog dlg(TRUE, TEXT(".avi"), NULL, 0, szFilter, NULL);
+	if(dlg.DoModal() != IDOK)
+        return;
+
+    if(!m_secondsource.Open(dlg.GetPathName()))
+        return;
+}
+
+
+void CRotoScopeDoc::OnMoviesClosesecondsource()
+{
+	m_secondsource.Close();
 }

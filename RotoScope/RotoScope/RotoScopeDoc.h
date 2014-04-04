@@ -57,12 +57,14 @@ private:
 	void XmlLoadFrame(IXMLDOMNode *xml);
 	void XmlLoadMovie(IXMLDOMNode *xml);
 	CGrImage m_initial;
+	CGrImage m_second;
 	void DrawImage();
 	void DrawLine(CGrImage &image, int x1, int y1, int x2, int y2);
 	CGrImage    m_bird;
 	int m_drawBird;
 	int m_birdx;
 	int m_birdy;
+	int Rotate(int, int);
 
     afx_msg void OnMoviesOpensourcemovie();
     afx_msg void OnMoviesOpenoutputmovie();
@@ -71,6 +73,7 @@ private:
     void CreateOneFrame();
 
     CMovieSource        m_moviesource;      // Any source movie
+	CMovieSource        m_secondsource;     // Any source movie
     CMovieMake          m_moviemake;        // Any movie we are outputing to
     CDirSoundSource     m_backaudio;        // Any background audio?
 
@@ -95,6 +98,8 @@ public:
 	virtual BOOL OnOpenDocument(LPCTSTR lpszPathName);
 	afx_msg void OnEditClearframe();
 	afx_msg void OnEditDrawbird();
+	afx_msg void OnMoviesOpensecondsource();
+	afx_msg void OnMoviesClosesecondsource();
 };
 
 
